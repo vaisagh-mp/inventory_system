@@ -1,91 +1,57 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import axios from "axios";
-import "./ItemStyles.css"; // Import CSS
+import "./ItemStyles.css";
 
 const ItemForm = () => {
-    const [formData, setFormData] = useState({
-        name: "",
-        item_type: "",
-        purchase_date: "",
-        stock_available: false,
-    });
+    const [items, setItems] = useState([{ name: "", item_type: "", purchase_date: "", stock_available: false }]);
 
-    const [itemTypes, setItemTypes] = useState([]); // Store item types
-
-    // Fetch item types from the backend
-    useEffect(() => {
-        axios.get("http://127.0.0.1:8000/api/item-types/")
-            .then(response => {
-                setItemTypes(response.data);
-            })
-            .catch(error => {
-                console.error("Error fetching item types:", error);
-            });
-    }, []);
-
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-    
-        setFormData({
-            ...formData,
-            [name]: name === "item_type" ? parseInt(value, 10) : type === "checkbox" ? checked : value
-        });
+    const handleInputChange = (index, event) => {
+        const { name, value, type, checked } = event.target;
+        const updatedItems = [...items];
+        updatedItems[index][name] = type === "checkbox" ? checked : value;
+        setItems(updatedItems);
     };
-    
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const addNewItem = () => {
+        setItems([...items, { name: "", item_type: "", purchase_date: "", stock_available: false }]);
+    };
+
+    const removeItem = (index) => {
+        const updatedItems = [...items];
+        updatedItems.splice(index, 1);
+        setItems(updatedItems);
+    };
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
         try {
-            await axios.post("http://127.0.0.1:8000/api/items/", formData);
-            alert("Item added successfully!");
-            setFormData({ name: "", item_type: "", purchase_date: "", stock_available: false });
+            await axios.post("http://127.0.0.1:8000/api/items/bulk-create/", { items });
+            alert("Items added successfully!");
+            setItems([{ name: "", item_type: "", purchase_date: "", stock_available: false }]);
         } catch (error) {
-            console.error("Error adding item:", error);
+            console.error("Error adding items:", error);
         }
     };
 
     return (
         <div className="container">
-            <h2>Add New Item</h2>
+            <h2>Add Multiple Items</h2>
             <form onSubmit={handleSubmit}>
-                <input
-                    type="text"
-                    name="name"
-                    placeholder="Item Name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                />
+                {items.map((item, index) => (
+                    <div key={index} className="item-group">
+                        <input type="text" name="name" value={item.name} placeholder="Item Name" onChange={(e) => handleInputChange(index, e)} required />
+                        <input type="date" name="purchase_date" value={item.purchase_date} onChange={(e) => handleInputChange(index, e)} required />
+                        <input type="text" name="item_type" value={item.item_type} placeholder="Item Type" onChange={(e) => handleInputChange(index, e)} required />
+                        <label>
+                            <input type="checkbox" name="stock_available" checked={item.stock_available} onChange={(e) => handleInputChange(index, e)} />
+                            In Stock
+                        </label>
+                        <button type="button" className="remove-btn" onClick={() => removeItem(index)}>Remove</button>
+                    </div>
+                ))}
 
-                {/* Dropdown for Item Type */}
-                <select name="item_type" value={formData.item_type} onChange={handleChange} required>
-                    <option value="">Select Item Type</option>
-                    {itemTypes.map((type) => (
-                        <option key={type.id} value={type.id}>
-                            {type.type_name}
-                        </option>
-                    ))}
-                </select>
-
-                <input
-                    type="date"
-                    name="purchase_date"
-                    value={formData.purchase_date}
-                    onChange={handleChange}
-                    required
-                />
-
-                <label>
-                    <input
-                        type="checkbox"
-                        name="stock_available"
-                        checked={formData.stock_available}
-                        onChange={handleChange}
-                    />
-                    Stock Available
-                </label>
-
-                <button type="submit">Add Item</button>
+                <button type="button" className="add-btn" onClick={addNewItem}>Add Another Item</button>
+                <button type="submit">Submit Items</button>
             </form>
         </div>
     );

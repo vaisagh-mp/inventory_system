@@ -4,6 +4,8 @@ import "./ItemStyles.css"; // Import CSS
 
 const ItemList = () => {
     const [items, setItems] = useState([]);
+    const [editingId, setEditingId] = useState(null);
+    const [editFormData, setEditFormData] = useState({});
 
     useEffect(() => {
         fetchItems();
@@ -27,6 +29,26 @@ const ItemList = () => {
         }
     };
 
+    const handleEdit = (item) => {
+        setEditingId(item.id);
+        setEditFormData(item);
+    };
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setEditFormData({ ...editFormData, [name]: value });
+    };
+
+    const handleUpdate = async (id) => {
+        try {
+            await axios.put(`http://127.0.0.1:8000/api/items/${id}/`, editFormData);
+            setItems(items.map(item => (item.id === id ? editFormData : item)));
+            setEditingId(null);
+        } catch (error) {
+            console.error("Error updating item:", error);
+        }
+    };
+
     return (
         <div className="container">
             <h2>Item List</h2>
@@ -43,13 +65,63 @@ const ItemList = () => {
                 <tbody>
                     {items.map((item) => (
                         <tr key={item.id}>
-                            <td>{item.name}</td>
-                            <td>{item.item_type}</td>
-                            <td>{item.purchase_date}</td>
-                            <td>{item.stock_available ? "Yes" : "No"}</td>
-                            <td>
-                                <button className="delete-btn" onClick={() => handleDelete(item.id)}>Delete</button>
-                            </td>
+                            {editingId === item.id ? (
+                                <>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            name="name"
+                                            value={editFormData.name}
+                                            onChange={handleChange}
+                                        />
+                                    </td>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            name="item_type"
+                                            value={editFormData.item_type}
+                                            onChange={handleChange}
+                                        />
+                                    </td>
+                                    <td>
+                                        <input
+                                            type="date"
+                                            name="purchase_date"
+                                            value={editFormData.purchase_date}
+                                            onChange={handleChange}
+                                        />
+                                    </td>
+                                    <td>
+                                        <select
+                                            name="stock_available"
+                                            value={editFormData.stock_available}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="true">Yes</option>
+                                            <option value="false">No</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <div className="button-group">
+                                            <button className="save-btn" onClick={() => handleUpdate(item.id)}>Save</button>
+                                            <button className="cancel-btn" onClick={() => setEditingId(null)}>Cancel</button>
+                                        </div>
+                                    </td>
+                                </>
+                            ) : (
+                                <>
+                                    <td>{item.name}</td>
+                                    <td>{item.item_type}</td>
+                                    <td>{item.purchase_date}</td>
+                                    <td>{item.stock_available ? "Yes" : "No"}</td>
+                                    <td>
+                                        <div className="button-group">
+                                            <button className="edit-btn" onClick={() => handleEdit(item)}>Edit</button>
+                                            <button className="delete-btn" onClick={() => handleDelete(item.id)}>Delete</button>
+                                        </div>
+                                    </td>
+                                </>
+                            )}
                         </tr>
                     ))}
                 </tbody>

@@ -1,6 +1,6 @@
 from rest_framework import generics
 from .models import Item, ItemType
-from .serializers import ItemSerializer, ItemTypeSerializer
+from .serializers import ItemSerializer, ItemTypeSerializer, BulkItemSerializer
 
 # CRUD for Item Types
 class ItemTypeListCreateView(generics.ListCreateAPIView):
@@ -19,3 +19,12 @@ class ItemListCreateView(generics.ListCreateAPIView):
 class ItemRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
+
+class BulkItemCreateView(generics.CreateAPIView):
+    serializer_class = BulkItemSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        items = serializer.save()
+        return Response({"message": "Items added successfully!", "items": ItemSerializer(items, many=True).data}, status=status.HTTP_201_CREATED)
